@@ -1,0 +1,26 @@
+{
+  "name": "s_academic_api",
+  "version": "1.0.0",
+  "description": "SAcademic API Project",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/siddsehgal/sAcademic_api.git"
+  },
+  "author": "Siddharth Sehgal | Vikash Sharma",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/siddsehgal/sAcademic_api/issues"
+  },
+  "homepage": "https://github.com/siddsehgal/sAcademic_api#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "mongoose": "^6.5.4",
+    "password-validator": "^5.3.0"
+  }
+}
