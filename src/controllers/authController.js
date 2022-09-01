@@ -1,79 +1,105 @@
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import bcrypt from 'bcrypt';
+import {
+    LoginSchema,
+    SignupSchema,
+    passwordSchema,
+} from '../validators/authValidator.js';
+import catchAsync from '../utils/catchAsync.js';
 
 class authController {
     //Singup Post API
-    static signup = async (req, res, next) => {
-        try {
-            const { userName, email } = req.body;
-            const hash = bcrypt.hashSync(req.body.password, 10);
+    static signup = catchAsync(async (req, res, next) => {
+        const { name, email } = req.body;
 
-            let user = await userModel.findOne({
-                email: email.toLowerCase(),
+        const isValid = SignupSchema.validate(req.body);
+
+        if (isValid.error) {
+            return res.status(200).send({
+                message: isValid.error.details[0].message,
+                status: 'fail',
             });
-
-            if (user)
-                return res
-                    .status(400)
-                    .send({ message: 'User already exist with this email!!' });
-
-            const newUser = new userModel({
-                userName: userName,
-                email: email,
-                password: hash,
-            });
-
-            user = await newUser.save();
-            const token = jwt.sign(
-                { id: user._id },
-                process.env.JWT_SECRET_KEY || 'TheSecretKey',
-                { expiresIn: process.env.JWT_EXP_TIME || '24h' }
-            );
-
-            res.send({
-                message: 'User Sign Up Successfully!!',
-                token,
-                user,
-            });
-        } catch (error) {
-            console.log(error);
         }
-    };
+
+        const isPassValid = passwordSchema.validate(req.body.password, {
+            details: true,
+        });
+
+        if (isPassValid && isPassValid.length > 0)
+            return res.status(200).send({
+                message: isPassValid[0].message,
+                status: 'fail',
+            });
+
+        const hash = bcrypt.hashSync(req.body.password, 10);
+
+        let user = await global.DB.User.findOne({
+            email: email.toLowerCase(),
+        });
+
+        if (user)
+            return res
+                .status(400)
+                .send({ message: 'User already exist with this email!!' });
+
+        const newUser = new global.DB.User({
+            name,
+            email,
+            password: hash,
+        });
+
+        user = await newUser.save();
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET_KEY || 'TheSecretKey',
+            { expiresIn: process.env.JWT_EXP_TIME || '24h' }
+        );
+
+        res.send({
+            message: 'User Sign Up Successfully!!',
+            token,
+            user,
+        });
+    });
 
     // Login Post API
-    static login = async (req, res, next) => {
-        try {
-            const { email, password } = req.body;
+    static login = catchAsync(async (req, res, next) => {
+        const { email, password } = req.body;
 
-            const user = await userModel.findOne({ email: email });
-
-            if (!user)
-                return res.status(400).send({
-                    error: 'No User Exist with given Email Address!!',
-                });
-
-            if (!bcrypt.compareSync(password, user.password))
-                return res.status(400).send({ error: 'Incorrect Password!!' });
-
-            const token = jwt.sign(
-                { id: user._id },
-                process.env.JWT_SECRET_KEY || 'TheSecretKey',
-                { expiresIn: process.env.JWT_EXP_TIME || '24h' }
-            );
-
-            res.send({
-                message: 'Login Successfully!!',
-                token,
-                user,
+        const isValid = LoginSchema.validate(req.body);
+        if (isValid.error) {
+            return res.status(200).send({
+                message: isValid.error.details[0].message,
+                status: 'fail',
             });
-        } catch (error) {
-            res.status(400).send(error);
         }
-    };
+
+        const user = await global.DB.User.findOne({ email: email });
+
+        if (!user)
+            return res.status(400).send({
+                error: 'No User Exist with given Email Address!!',
+            });
+
+        if (!bcrypt.compareSync(password, user.password))
+            return res.status(400).send({ error: 'Incorrect Password!!' });
+
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET_KEY || 'TheSecretKey',
+            { expiresIn: process.env.JWT_EXP_TIME || '24h' }
+        );
+
+        res.send({
+            message: 'Login Successfully!!',
+            token,
+            user,
+        });
+    });
 
     // Get Google SignIn Link
-    static getGoogleLoginLink = async (req, res) => {
+    static getGoogleLoginLink = catchAsync(async (req, res) => {
         const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
         const options = {
             redirect_uri: `${process.env.ROOT_URL}${process.env.GOOGLE_REDIRECT_URI}`,
@@ -91,10 +117,10 @@ class authController {
         ).toString()}`;
 
         return res.send(googleAuthURL);
-    };
+    });
 
     // Verify Google SignIn
-    static googleLoginVerify = async (req, res) => {
+    static googleLoginVerify = catchAsync(async (req, res) => {
         const code = req.query.code;
 
         const queryOption = {
@@ -166,90 +192,7 @@ class authController {
         );
 
         res.status(200).send({ message: 'Login Successfully', token, user });
-    };
-
-    // Get Facebook SignIn Link
-    static getFacebookLoginLink = async (req, res) => {
-        const rootUrl = 'https://www.facebook.com/v14.0/dialog/oauth';
-        const options = {
-            redirect_uri: `${process.env.ROOT_URL}${process.env.FACEBOOK_REDIRECT_URI}`,
-            client_id: process.env.FACEBOOK_CLIENT_ID,
-        };
-        const facebookAuthURL = `${rootUrl}?${new URLSearchParams(
-            options
-        ).toString()}`;
-
-        return res.send({ options, facebookAuthURL });
-    };
-
-    // Verify Facebook SignIn
-    static facebookLoginVerify = async (req, res) => {
-        const code = req.query.code;
-
-        let queryOption = {
-            client_id: process.env.FACEBOOK_CLIENT_ID,
-            redirect_uri: `${process.env.ROOT_URL}${process.env.FACEBOOK_REDIRECT_URI}`,
-            client_secret: process.env.FACEBOOK_CLIENT_SECRET,
-            code,
-        };
-        let tokenReqOptions = {
-            url: `https://graph.facebook.com/v14.0/oauth/access_token?${new URLSearchParams(
-                queryOption
-            ).toString()}`,
-            method: 'GET',
-        };
-
-        let tokenRes = await axios.request(tokenReqOptions).catch((error) => {
-            return { isError: true, error: error.response.data };
-        });
-
-        if (tokenRes.isError)
-            return res.status(400).send({ data: tokenRes.error });
-
-        const { access_token } = tokenRes.data;
-
-        let userDataQueryOptions = {
-            fields: 'email,name',
-            access_token,
-        };
-
-        let userDataReqOptions = {
-            url: `https://graph.facebook.com/me?${new URLSearchParams(
-                userDataQueryOptions
-            ).toString()}`,
-            method: 'GET',
-        };
-
-        let userData = await axios
-            .request(userDataReqOptions)
-            .catch((error) => {
-                return { isError: true, error: error.response.data };
-            });
-
-        if (userData.isError)
-            return res.status(400).send({ data: userData.error });
-
-        const { email, name, id } = userData.data;
-
-        let user = await userModel.findOne({ email: email.toLowerCase() });
-
-        if (!user) {
-            const newUser = new userModel({
-                userName: name,
-                email: email,
-            });
-
-            user = await newUser.save();
-        }
-
-        const token = jwt.sign(
-            { id: user._id },
-            process.env.JWT_SECRET_KEY || 'TheSecretKey',
-            { expiresIn: process.env.JWT_EXP_TIME || '24h' }
-        );
-
-        res.status(200).send({ message: 'Login Successfully', token, user });
-    };
+    });
 }
 
 export default authController;

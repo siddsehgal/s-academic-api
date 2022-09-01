@@ -3,12 +3,15 @@ dotenv.config();
 import express from 'express';
 import Router from './src/routes/index.js';
 import ConnectDB from './models/index.js';
+import GlobalErrorHandler from './src/controllers/errorController.js';
 
 const app = express();
 const PORT = process.env.PORT || 5500;
 
 // Connect to MongoDB
 ConnectDB();
+
+app.use(express.json());
 
 app.get('/', (req, res, next) => {
     res.status(200).send({
@@ -21,6 +24,10 @@ app.get('/', (req, res, next) => {
 });
 
 app.use('/api', Router);
+
+// Handle Global Errors
+app.use(GlobalErrorHandler);
+
 app.listen(PORT, () => {
     console.log(
         `Server running on ${

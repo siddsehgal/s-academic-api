@@ -13,12 +13,4 @@ router.get('/google', (req, res) => {
 });
 router.get('/google-login-verify', authController.googleLoginVerify);
 
-router.get('/facebook-login-link', authController.getFacebookLoginLink);
-
-router.get('/facebook', (req, res) => {
-    res.send(req.query);
-});
-
-router.get('/facebook-login-verify', authController.facebookLoginVerify);
-
 export default router;
