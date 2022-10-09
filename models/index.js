@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 import User from './user.js';
 import Class from './class.js';
+import Subject from './subject.js';
+import Topic from './topic.js';
+import Note from './note.js';
+import Video from './video.js';
+import Assignment from './assignment.js';
+import AssignmentQuestion from './assignmentQuestion.js';
+import AssignmentAttempt from './assignmentAttempt.js';
 
 function ConnectDB() {
     try {
@@ -17,6 +24,13 @@ function ConnectDB() {
         const Data = {
             User,
             Class,
+            Subject,
+            Topic,
+            Note,
+            Video,
+            Assignment,
+            AssignmentQuestion,
+            AssignmentAttempt,
         };
 
         global.DB = Data;

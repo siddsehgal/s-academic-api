@@ -6,6 +6,11 @@ const classSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    order: {
+        type: Number,
+        required: false,
+    },
+    
 });
 
 const classModel = mongoose.model('class', classSchema);
