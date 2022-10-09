@@ -4,6 +4,7 @@ import express from 'express';
 import Router from './src/routes/index.js';
 import ConnectDB from './models/index.js';
 import GlobalErrorHandler from './src/controllers/errorController.js';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 5500;
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 5500;
 ConnectDB();
 
 app.use(express.json());
+app.use(cors({ origin: '*' }));
 
 app.get('/', (req, res, next) => {
     res.status(200).send({

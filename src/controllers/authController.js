@@ -7,11 +7,12 @@ import {
     passwordSchema,
 } from '../validators/authValidator.js';
 import catchAsync from '../utils/catchAsync.js';
+import moment from 'moment';
 
 class authController {
     //Singup Post API
     static signup = catchAsync(async (req, res, next) => {
-        const { name, email } = req.body;
+        const { name, email, password, repeatPassword, userClass } = req.body;
 
         const isValid = SignupSchema.validate(req.body);
 
@@ -21,7 +22,6 @@ class authController {
                 status: 'fail',
             });
         }
-
         const isPassValid = passwordSchema.validate(req.body.password, {
             details: true,
         });
@@ -39,14 +39,18 @@ class authController {
         });
 
         if (user)
-            return res
-                .status(400)
-                .send({ message: 'User already exist with this email!!' });
+            return res.status(200).send({
+                status: 'fail',
+                message: 'User already exist with this email!!',
+            });
 
         const newUser = new global.DB.User({
             name,
             email,
             password: hash,
+            userClass,
+            isGoogleLogin: false,
+            joinDate: moment(new Date()).format('DD/MM/YYYY'),
         });
 
         user = await newUser.save();
@@ -57,9 +61,9 @@ class authController {
         );
 
         res.send({
+            status: 'success',
             message: 'User Sign Up Successfully!!',
-            token,
-            user,
+            data: { token, user },
         });
     });
 
@@ -78,12 +82,21 @@ class authController {
         const user = await global.DB.User.findOne({ email: email });
 
         if (!user)
-            return res.status(400).send({
-                error: 'No User Exist with given Email Address!!',
+            return res.status(200).send({
+                status: 'fail',
+                message: 'No User Exist with given Email Address!!',
+            });
+        else if (user.isGoogleLogin)
+            return res.status(200).send({
+                status: 'fail',
+                message:
+                    'Your Account is Linked with Google.\nPlease use Login with Google Instead!!',
             });
 
         if (!bcrypt.compareSync(password, user.password))
-            return res.status(400).send({ error: 'Incorrect Password!!' });
+            return res
+                .status(200)
+                .send({ status: 'fail', message: 'Incorrect Password!!' });
 
         const token = jwt.sign(
             { id: user._id },
@@ -92,9 +105,93 @@ class authController {
         );
 
         res.send({
+            status: 'success',
             message: 'Login Successfully!!',
-            token,
-            user,
+            data: { token, user },
+        });
+    });
+
+    static googleLogin = catchAsync(async (req, res, next) => {
+        const { email, name, googleId, googleImgUrl } = req.body;
+
+        let user = await global.DB.User.findOne({
+            email: email.toLowerCase(),
+        });
+
+        if (!user) {
+            const newUser = await new global.DB.User({
+                name,
+                email,
+                googleId,
+                googleImgUrl,
+                isGoogleLogin: true,
+                joinDate: moment(new Date()).format('DD/MM/YYYY'),
+            });
+            user = await newUser.save();
+        }
+
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET_KEY || 'TheSecretKey',
+            { expiresIn: process.env.JWT_EXP_TIME || '24h' }
+        );
+
+        res.send({
+            status: 'success',
+            message: 'User Login Successfully!!',
+            data: { token, user },
+        });
+    });
+
+    // Verify Token
+    static verifyToken = catchAsync(async (req, res, next) => {
+        let token = null;
+        if (
+            req.headers.authorization &&
+            req.headers.authorization.startsWith('Bearer')
+        ) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (!token) {
+            return res.status(200).send({
+                message: 'Token not found',
+                status: 'fail',
+            });
+        }
+
+        try {
+            const decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET_KEY || 'TheSecretKey'
+            );
+            const { id } = decoded;
+
+            const user = await global.DB.User.findOne({
+                _id: id,
+            });
+
+            if (!user)
+                return res.status(200).send({
+                    message: 'No User found with this Token!!',
+                    status: 'fail',
+                });
+
+            req.user = user;
+            next();
+        } catch (error) {
+            return res.status(200).send({
+                message: 'Token Invalid or Expired',
+                status: 'fail',
+            });
+        }
+    });
+
+    // Check Login
+    static checkLogin = catchAsync(async (req, res, next) => {
+        res.send({
+            status: 'success',
+            message: 'Logged In',
         });
     });
 

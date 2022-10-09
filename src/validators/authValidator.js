@@ -10,7 +10,8 @@ export const SignupSchema = Joi.object({
     name: Joi.string().alphanum().min(3).max(30).required(),
     email: Joi.string().email().required().lowercase(),
     password: Joi.string().required(),
-    repeat_password: Joi.ref('password'),
+    repeatPassword: Joi.ref('password'),
+    userClass: Joi.string().required(),
 });
 
 export const passwordSchema = new passwordValidator()

@@ -12,10 +12,31 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
     },
+    userClass: {
+        type: String,
+        // required: true,
+    },
     password: {
         type: String,
         trim: true,
     },
+    isGoogleLogin: {
+        type: Boolean,
+        default: false,
+    },
+    googleId: {
+        type: String,
+        trim: true,
+    },
+    googleImgUrl: {
+        type: String,
+        trim: true,
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
+    joinDate: { type: String, trim: true },
 });
 
 const userModel = mongoose.model('user', userSchema);
