@@ -8,7 +8,9 @@ import {
 } from '../validators/authValidator.js';
 import catchAsync from '../utils/catchAsync.js';
 import moment from 'moment';
+import { OAuth2Client } from 'google-auth-library';
 
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 class authController {
     //Singup Post API
     static signup = catchAsync(async (req, res, next) => {
@@ -110,9 +112,22 @@ class authController {
             data: { token, user },
         });
     });
+    static async verify(token) {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
+            // Or, if multiple clients access the backend:
+            //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+        });
+        const payload = ticket.getPayload();
+        return payload;
+        // If request specified a G Suite domain:
+        // const domain = payload['hd'];
+    }
 
     static googleLogin = catchAsync(async (req, res, next) => {
-        const { email, name, googleId, googleImgUrl } = req.body;
+        const response = await this.verify(req.body.token);
+        const { email, name, sub: googleId, picture: googleImgUrl } = response;
 
         let user = await global.DB.User.findOne({
             email: email.toLowerCase(),
