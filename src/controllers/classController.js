@@ -1,6 +1,14 @@
 import catchAsync from '../utils/catchAsync.js';
 
 class classController {
+    static getClassList = catchAsync(async (req, res, next) => {
+        const classesData = await global.Class.find({});
+
+        res.send({
+            message: 'Class Data Fetched Successfully',
+            data: classesData,
+        });
+    });
     //SingUp Post API
     static getAll = catchAsync(async (req, res, next) => {
         const classes = await global.DB.Class.find();

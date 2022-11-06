@@ -45,12 +45,19 @@ class authController {
                 status: 'fail',
                 message: 'User already exist with this email!!',
             });
+        const classData = await global.DB.Class.findOne({ _id: userClass });
+        if (!classData)
+            return res.status(200).send({
+                status: 'fail',
+                message: 'No Class found!!',
+            });
 
         const newUser = new global.DB.User({
             name,
             email,
             password: hash,
-            userClass,
+            class_id: classData._id,
+            userClass: classData.title,
             isGoogleLogin: false,
             joinDate: moment(new Date()).format('DD/MM/YYYY'),
         });

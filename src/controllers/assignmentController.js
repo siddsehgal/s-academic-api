@@ -317,6 +317,48 @@ class assignmentController {
             data: dataRes,
         });
     });
+
+    static getDashboardAssignmentList = catchAsync(async (req, res, next) => {
+        const user = await global.DB.User.findOne({ _id: req.user.id });
+
+        const classData = await global.DB.Class.findOne({ _id: user.class_id });
+
+        const subjectData = await global.DB.Subject.find({
+            class_id: classData._id,
+        });
+
+        const topicData = await global.DB.Topic.find({
+            subject_id: { $in: subjectData.map((item) => item._id) },
+        });
+        const assignmentData = await global.DB.Assignment.find({
+            topic_id: { $in: topicData.map((item) => item._id) },
+        });
+
+        const data = [];
+        for (let assignment of assignmentData) {
+            let topic = topicData.find(
+                (item) => item._id == assignment.topic_id
+            );
+            let subject = subjectData.find(
+                (item) => item._id == topic.subject_id
+            );
+            let temp = {
+                assignment_id: assignment._id,
+                assignment_title: assignment.title,
+                topic_id: topic._id,
+                topic_title: topic.title,
+                subject_id: subject._id,
+                subject_title: subject.title,
+                class_id: classData._id,
+            };
+            data.push(temp);
+        }
+
+        return res.send({
+            message: '',
+            data,
+        });
+    });
 }
 
 export default assignmentController;

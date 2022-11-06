@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
     },
+    class_id: {
+        type: String,
+    },
     userClass: {
         type: String,
         // required: true,

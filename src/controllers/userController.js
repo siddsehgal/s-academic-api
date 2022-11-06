@@ -11,14 +11,25 @@ class userController {
     static update = catchAsync(async (req, res, next) => {
         const { _id } = req.user._id;
         const { name, userClass } = req.body;
+        let classData;
+        if (userClass) {
+            classData = await global.DB.Class.findOne({ _id: userClass });
+            if (!classData)
+                return res.status(200).send({
+                    status: 'fail',
+                    message: 'No Class found!!',
+                });
+        }
 
-        if (!name || !userClass)
-            return res.status(200).send({
-                status: 'fail',
-                message: 'Name and Class are required!!',
-            });
-
-        await global.DB.User.findByIdAndUpdate({ _id }, { name, userClass });
+        await global.DB.User.findByIdAndUpdate(
+            { _id },
+            {
+                ...(name ? { name: name } : {}),
+                ...(userClass
+                    ? { class_id: classData._id, userClass: classData.title }
+                    : {}),
+            }
+        );
 
         res.send({
             message: 'User Data Updated Successfully',

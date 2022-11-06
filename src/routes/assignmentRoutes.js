@@ -13,5 +13,6 @@ router.delete('/:id', assignmentController.delete);
 
 router.get('/attempt/all', assignmentController.getAttemptAssignment);
 router.post('/attempt', assignmentController.attempt);
+router.get('/dashboard/list', assignmentController.getDashboardAssignmentList)
 
 export default router;
